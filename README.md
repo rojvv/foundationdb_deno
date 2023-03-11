@@ -18,6 +18,8 @@ const future = transaction.get("yourKey");
 
 future.blockUntilReady(); // or `future.setCallback`
 
+future.getError(); // throws if the future has error
+
 const value = future.getValue();
 
 if (value == null) {
