@@ -28,6 +28,12 @@ export const options = {
   },
 };
 
+const FLAT_OPTIONS = {
+  ...options.string,
+  ...options.number,
+  ...options.noParam,
+};
+
 export class Database {
   constructor(private pointer: NonNullable<Deno.PointerValue>) {
   }
@@ -48,19 +54,37 @@ export class Database {
   setOption(option: keyof (typeof options)["string"], value: string): void;
   setOption(option: keyof (typeof options)["noParam"]): void;
   setOption(option: string, value?: number | string) {
+    const optionData = FLAT_OPTIONS[option];
+    if (!optionData) {
+      throw new Error("Invalid option");
+    }
+    const [optionId, optionValueType] = optionData;
+    let valuePointer: Deno.PointerValue = null;
+    let valueLength = 0;
+    if (optionValueType === "number") {
+      if (typeof value !== "number" || !Number.isInteger(value)) {
+        throw new TypeError("Invalid integer value argument");
+      }
+      // Prefer Uint8Array due to Deno FFI preference on it.
+      const u8array = new Uint8Array(8);
+      const view = new DataView(u8array.buffer);
+      view.setBigInt64(0, BigInt(value), true);
+      valuePointer = Deno.UnsafePointer.of(u8array);
+      valueLength = 8;
+    } else if (optionValueType === "string") {
+      if (typeof value !== "string") {
+        throw new TypeError("Invalid string value argument");
+      }
+      // No need to create a CString (ie. add null byte) due to length parameter
+      const stringBuffer = new TextEncoder().encode(value);
+      valuePointer = Deno.UnsafePointer.of(stringBuffer);
+      valueLength = stringBuffer.length;
+    }
     checkFDBErr(lib.fdb_database_set_option(
       this.pointer,
-      Object.fromEntries(
-        Object.values(options)
-          .map((v) => Object.entries(v))
-          .flat(),
-      )[option][0] as number,
-      value == undefined
-        ? null
-        : typeof value === "number"
-        ? new Uint8Array(value)
-        : encodeCString(value),
-      typeof value === "number" ? 8 : 1,
+      FLAT_OPTIONS[option][0] as number,
+      valuePointer,
+      valueLength,
     ));
   }
 
