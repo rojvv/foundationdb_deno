@@ -19,7 +19,7 @@ export function checkFDBErr(code: number) {
 }
 
 export function encodeCString(string: string) {
-  return new Uint8Array([...new TextEncoder().encode(string), 0]);
+  return new TextEncoder().encode(`${string}\0`);
 }
 
 export class PointerContainer {
