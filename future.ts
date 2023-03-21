@@ -36,22 +36,24 @@ export class Future {
   }
 
   getValue() {
-    const outPresentContainer = new PointerContainer();
-    const outValueContainer = new PointerContainer();
-    const outLengthContainer = new PointerContainer();
+    const alloc = new ArrayBuffer(16);
+    const outValueContainer = new PointerContainer(new BigUint64Array(alloc, 0, 1));
+    const outPresentAndLengthBuffer = new Uint32Array(alloc, 8, 2);
+    const outPresentPointer = Deno.UnsafePointer.of(outPresentAndLengthBuffer);
+    const outLengthPointer = Deno.UnsafePointer.of(outPresentAndLengthBuffer.subarray(1));
     checkFDBErr(lib.fdb_future_get_value(
       this.pointer,
-      outPresentContainer.use(),
+      outPresentPointer,
       outValueContainer.use(),
-      outLengthContainer.use(),
+      outLengthPointer
     ));
-    const outPresent = outPresentContainer.array[0] == 1n;
+    const outPresent = outPresentAndLengthBuffer[0] !== 0;
     if (!outPresent) {
       return null;
     }
     return Deno.UnsafePointerView.getArrayBuffer(
       outValueContainer.get(),
-      Number(outLengthContainer.array[0]),
+      outPresentAndLengthBuffer[1],
     );
   }
 }
