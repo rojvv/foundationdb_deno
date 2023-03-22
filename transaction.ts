@@ -27,4 +27,10 @@ export class Transaction {
       value.byteLength,
     );
   }
+
+  commit() {
+    const pointer = lib.fdb_transaction_commit(this.pointer);
+    assertNotEquals(pointer, null);
+    return new Future(pointer!);
+  }
 }
