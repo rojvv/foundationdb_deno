@@ -1,4 +1,17 @@
-export const { symbols: lib } = Deno.dlopen("/usr/lib/libfdb_c.so", {
+let filename = Deno.env.get("LIBFDB_C");
+if (!filename) {
+  if (Deno.build.os == "darwin") {
+    filename = "/usr/local/lib/libfdb_c.dylib";
+  } else if (Deno.build.os == "linux") {
+    filename = "/usr/lib/libfdb_c.so";
+  } else {
+    throw new Error(
+      "The LIBFDB_C variable was not set and could not automatically resolve the path to libfdb_c",
+    );
+  }
+}
+
+export const { symbols: lib } = Deno.dlopen(filename, {
   fdb_select_api_version_impl: { parameters: ["i32", "i32"], result: "i32" },
   fdb_get_error: { parameters: ["i32"], result: "buffer" },
   fdb_error_predicate: { parameters: ["i32", "i32"], result: "i32" },
