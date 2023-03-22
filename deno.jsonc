@@ -1,0 +1,6 @@
+{
+  "lock": false,
+  "tasks": {
+    "regenerate-options": "deno run --allow-net --allow-write scripts/regenerate_options.ts"
+  }
+}
