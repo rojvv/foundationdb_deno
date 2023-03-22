@@ -2,9 +2,10 @@ import { lib } from "./lib.ts";
 import { checkFDBErr, encodeCString, PointerContainer } from "./utils.ts";
 import { Database } from "./database.ts";
 
-export function selectAPIVersion(apiVersion: number, headerVersion?: number) {
-  headerVersion ??= apiVersion;
-  checkFDBErr(lib.fdb_select_api_version_impl(apiVersion, headerVersion));
+const HEADER_VERSION = 710;
+
+export function selectAPIVersion(apiVersion: number) {
+  checkFDBErr(lib.fdb_select_api_version_impl(apiVersion, HEADER_VERSION));
 }
 
 export async function startNetwork() {
