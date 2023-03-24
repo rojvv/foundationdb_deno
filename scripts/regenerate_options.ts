@@ -36,6 +36,6 @@ Deno.writeTextFile(
   `// This file was generated. It is not recommended to manually modify.
 // deno-lint-ignore-file
 // deno-fmt-ignore-file
-export const options = ${JSON.stringify(initializer)};
+export const options = ${JSON.stringify(initializer)} as const;
 `,
 );

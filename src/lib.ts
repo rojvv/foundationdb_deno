@@ -74,7 +74,7 @@ export const { symbols: lib } = Deno.dlopen(filename, {
     parameters: [
       "pointer",
       "i32",
-      "buffer",
+      "pointer",
       "i32",
     ],
     result: "i32",
