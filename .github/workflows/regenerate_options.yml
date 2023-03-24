@@ -4,8 +4,11 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: write
+
 jobs:
-  regenerate-types:
+  regenerate-options:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
