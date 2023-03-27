@@ -4,7 +4,14 @@ import { encodeCString } from "./utils.ts";
 import { Future } from "./future.ts";
 
 export class Transaction {
+  private static FINALIZATION_REGISTRY = new FinalizationRegistry(
+    (pointer: NonNullable<Deno.PointerValue>) => {
+      lib.fdb_transaction_destroy(pointer);
+    },
+  );
+
   constructor(private pointer: NonNullable<Deno.PointerValue>) {
+    Transaction.FINALIZATION_REGISTRY.register(this, pointer);
   }
 
   get(key: string, snapshot = 0) {

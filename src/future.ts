@@ -2,6 +2,11 @@ import { lib } from "./lib.ts";
 import { checkFDBErr, PointerContainer } from "./utils.ts";
 
 export class Future {
+  private static FINALIZATION_REGISTRY = new FinalizationRegistry(
+    (pointer: NonNullable<Deno.PointerValue>) => {
+      lib.fdb_future_destroy(pointer);
+    },
+  );
   private static FUTURE_CALLBACK_MAP = new Map<number | bigint, Future>();
   private static FUTURE_CALLBACK = new Deno.UnsafeCallback(
     { parameters: ["pointer", "pointer"], result: "void" },
@@ -22,6 +27,7 @@ export class Future {
   private callback?: (future: Future) => void;
 
   constructor(private pointer: NonNullable<Deno.PointerValue>) {
+    Future.FINALIZATION_REGISTRY.register(this, pointer);
   }
 
   get ready() {

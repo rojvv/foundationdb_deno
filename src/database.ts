@@ -5,7 +5,14 @@ import { Tenant } from "./tenant.ts";
 import { options } from "./options.ts";
 
 export class Database {
+  private static FINALIZATION_REGISTRY = new FinalizationRegistry(
+    (pointer: NonNullable<Deno.PointerValue>) => {
+      lib.fdb_database_destroy(pointer);
+    },
+  );
+
   constructor(private pointer: NonNullable<Deno.PointerValue>) {
+    Database.FINALIZATION_REGISTRY.register(this, pointer);
   }
 
   createTransaction() {
@@ -14,10 +21,6 @@ export class Database {
       lib.fdb_database_create_transaction(this.pointer, container.use()),
     );
     return new Transaction(container.get());
-  }
-
-  destroy() {
-    lib.fdb_database_destroy(this.pointer);
   }
 
   setOption(
