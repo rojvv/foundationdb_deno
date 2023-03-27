@@ -3,7 +3,7 @@ import { checkFDBErr, PointerContainer } from "./utils.ts";
 
 export class Future {
   private static FUTURE_CALLBACK_MAP = new Map<number | bigint, Future>();
-  private static FUTURE_CALLBACK = new Deno.UnsafeCallback(
+  private static FUTURE_CALLBACK = Deno.UnsafeCallback.threadSafe(
     { parameters: ["pointer", "pointer"], result: "void" },
     (pointer) => {
       if (!pointer) {
@@ -21,31 +21,36 @@ export class Future {
   private callback?: (future: Future) => void;
 
   constructor(private pointer: NonNullable<Deno.PointerValue>) {
-    Future.FUTURE_CALLBACK_MAP.set(
-      Deno.UnsafePointer.value(this.pointer),
-      this,
-    );
-    checkFDBErr(lib.fdb_future_set_callback(
-      this.pointer,
-      Future.FUTURE_CALLBACK.pointer,
-      null,
-    ));
+  }
+
+  get ready() {
+    return lib.fdb_future_is_ready(this.pointer) != 0;
   }
 
   blockUntilReady() {
     checkFDBErr(lib.fdb_future_block_until_ready(this.pointer));
   }
 
+  setCallback(callback: (future: Future) => void) {
+    if (this.callback) {
+      throw new Error("Callback already set");
+    }
+    this.callback = callback;
+    Future.FUTURE_CALLBACK_MAP.set(
+      Deno.UnsafePointer.value(this.pointer),
+      this,
+    );
+    checkFDBErr(
+      lib.fdb_future_set_callback(
+        this.pointer,
+        Future.FUTURE_CALLBACK.pointer,
+        null,
+      ),
+    );
+  }
+
   getError() {
     checkFDBErr(lib.fdb_future_get_error(this.pointer));
-  }
-
-  setCallback(callback: (future: Future) => void) {
-    this.callback = callback;
-  }
-
-  unsetCallback() {
-    this.callback = undefined;
   }
 
   getValue() {
@@ -72,5 +77,9 @@ export class Future {
       outValueContainer.get(),
       outPresentAndLengthBuffer[1],
     );
+  }
+
+  destroy() {
+    lib.fdb_future_destroy(this.pointer);
   }
 }
