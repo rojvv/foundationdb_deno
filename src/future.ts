@@ -3,7 +3,7 @@ import { checkFDBErr, PointerContainer } from "./utils.ts";
 
 export class Future {
   private static FUTURE_CALLBACK_MAP = new Map<number | bigint, Future>();
-  private static FUTURE_CALLBACK = Deno.UnsafeCallback.threadSafe(
+  private static FUTURE_CALLBACK = new Deno.UnsafeCallback(
     { parameters: ["pointer", "pointer"], result: "void" },
     (pointer) => {
       if (!pointer) {
@@ -13,6 +13,7 @@ export class Future {
       const future = Future.FUTURE_CALLBACK_MAP.get(pointerValue);
       if (future) {
         Future.FUTURE_CALLBACK_MAP.delete(pointerValue);
+        Future.FUTURE_CALLBACK.unref();
         future.callback?.(future);
       }
     },
@@ -47,6 +48,7 @@ export class Future {
         null,
       ),
     );
+    Future.FUTURE_CALLBACK.ref();
   }
 
   getError() {
